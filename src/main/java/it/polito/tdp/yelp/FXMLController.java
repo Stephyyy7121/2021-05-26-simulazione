@@ -5,8 +5,10 @@
 package it.polito.tdp.yelp;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.yelp.model.BusinessRecensione;
 import it.polito.tdp.yelp.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -35,33 +37,88 @@ public class FXMLController {
     private Button btnPercorso; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbCitta"
-    private ComboBox<?> cmbCitta; // Value injected by FXMLLoader
+    private ComboBox<String> cmbCitta; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtX"
     private TextField txtX; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbAnno"
-    private ComboBox<?> cmbAnno; // Value injected by FXMLLoader
+    private ComboBox<Integer> cmbAnno; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbLocale"
-    private ComboBox<?> cmbLocale; // Value injected by FXMLLoader
+    private ComboBox<BusinessRecensione> cmbLocale; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
+    
+    private boolean grafoCreato = false;
+    
+    private BusinessRecensione localeMigliore;
 
     @FXML
     void doCalcolaPercorso(ActionEvent event) {
+    	
+    	txtResult.clear();
+    	String input = this.txtX.getText();
+    	if (input.compareTo("")==0) {
+    		txtResult.appendText("Inserire valore soglia'\n");
+    	}
+    	
+    	Double x = 0.0;
+    	try {
+    		x = Double.parseDouble(input);
+    	}catch (NumberFormatException e ) {
+    		txtResult.appendText("Valore inseirot non accettabile\n");
+    		return;
+    	}
+    	BusinessRecensione b = this.cmbLocale.getValue();
+    	if (b == null) {
+    		txtResult.appendText("Inserire locale\n");
+    	}
+    	
+    	List<BusinessRecensione> percorso = this.model.getPercorso(b, this.localeMigliore, x);
+    	txtResult.appendText("Migliore percorso : \n");
+    	if (percorso.isEmpty()) {
+    		txtResult.appendText("No percorso\n");
+    	}
+    	for (BusinessRecensione br : percorso) {
+    		txtResult.appendText(br.toString()+"\n");
+    	}
     	
     }
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
+    	
+    	txtResult.clear();
+    	this.cmbLocale.getItems().clear();
+    	String city = this.cmbCitta.getValue();
+    	if (city == null) {
+    		txtResult.appendText("Inserire citta'\n");
+    	}
+    	Integer year = this.cmbAnno.getValue();
+    	if (year == null) {
+    		txtResult.appendText("Inserire anno\n");
+    	}
+    	
+    	this.model.creaGrafo(city, year);
+    	this.grafoCreato = true;
+    	txtResult.appendText("Grafo creato!\n#Vertici: " + this.model.getVertici().size()+"\n#Archi: "+ this.model.numArchi()+"\n");
+    	this.cmbLocale.getItems().addAll(this.model.getVertici());
 
     }
 
     @FXML
     void doLocaleMigliore(ActionEvent event) {
 
+    	txtResult.clear();
+    	if (!grafoCreato) {
+    		txtResult.appendText("Non e' stato creato un grafo\n");
+    	}
+    	
+    	BusinessRecensione migliore = this.model.localeMigliore();
+    	this.localeMigliore = migliore;
+    	txtResult.appendText("LOCALE MIGLIORE = " + migliore);
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -78,5 +135,7 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	this.cmbAnno.getItems().addAll(this.model.getYear());
+    	this.cmbCitta.getItems().addAll(this.model.getCities());
     }
 }

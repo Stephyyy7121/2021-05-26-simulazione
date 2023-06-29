@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.yelp.model.Business;
+import it.polito.tdp.yelp.model.BusinessRecensione;
 import it.polito.tdp.yelp.model.Review;
 import it.polito.tdp.yelp.model.User;
 
@@ -109,6 +111,69 @@ public class YelpDao {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	
+	public List<String> getCity() {
+		
+		String sql = "SELECT DISTINCT  city "
+				+ "FROM business "
+				+ "ORDER BY city ";
+		
+		List<String> result = new ArrayList<String>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				
+				result.add(res.getString("city"));
+			}
+			res.close();
+			st.close();
+			conn.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		return result;
+		
+	}
+	
+	public List<BusinessRecensione> getVertici(String city, Integer year, Map<String, Business> idMap) {
+		
+		String sql = "SELECT DISTINCT b.business_id, AVG(r.stars) AS  media "
+				+ "FROM business b, reviews r "
+				+ "WHERE b.business_id = r.business_id AND YEAR(r.review_date) = ? AND b.city = ? "
+				+ "GROUP BY b.business_id "
+				+ "ORDER BY b.business_id";
+		
+		List<BusinessRecensione> result = new ArrayList<BusinessRecensione>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, year);
+			st.setString(2, city);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				
+				Business b = idMap.get(res.getString("business_id"));
+				result.add(new BusinessRecensione(b, res.getDouble("media")));
+			}
+			res.close();
+			st.close();
+			conn.close();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		return result;
 	}
 	
 	
